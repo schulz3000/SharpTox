@@ -36,6 +36,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Core\Tox.cs" />
+    <Compile Include="Core\ToxFriend.cs" />
+    <Compile Include="Core\ToxGroup.cs" />
+    <Compile Include="Core\ToxGroupMember.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Av\ToxAv.cs" />
     <Compile Include="Av\ToxAvDelegates.cs" />
