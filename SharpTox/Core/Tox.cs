@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -191,90 +192,90 @@ namespace SharpTox.Core
         /// <summary>
         /// Sends a file send request to the given friendnumber.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="filesize"></param>
         /// <param name="filename">Maximum filename length is 255 bytes.</param>
         /// <returns>the filenumber on success and -1 on failure.</returns>
-        public int NewFileSender(int friendnumber, ulong filesize, string filename)
+        public int NewFileSender(ToxFriend friend, ulong filesize, string filename)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.NewFileSender(tox, friendnumber, filesize, filename);
+                return ToxFunctions.NewFileSender(tox, friend.Number, filesize, filename);
             }
         }
 
         /// <summary>
         /// Sends a file control request.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="send_receive">0 if we're sending and 1 if we're receiving.</param>
         /// <param name="filenumber"></param>
         /// <param name="message_id"></param>
         /// <param name="data"></param>
         /// <returns>true on success and false on failure.</returns>
-        public bool FileSendControl(int friendnumber, int send_receive, int filenumber, ToxFileControl message_id, byte[] data)
+        public bool FileSendControl(ToxFriend friend, int send_receive, int filenumber, ToxFileControl message_id, byte[] data)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.FileSendControl(tox, friendnumber, (byte)send_receive, (byte)filenumber, (byte)message_id, data, (ushort)data.Length);
+                return ToxFunctions.FileSendControl(tox, friend.Number, (byte)send_receive, (byte)filenumber, (byte)message_id, data, (ushort)data.Length);
             }
         }
 
         /// <summary>
         /// Sends file data.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="filenumber"></param>
         /// <param name="data"></param>
         /// <returns>true on success and false on failure.</returns>
-        public bool FileSendData(int friendnumber, int filenumber, byte[] data)
+        public bool FileSendData(ToxFriend friend, int filenumber, byte[] data)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.FileSendData(tox, friendnumber, filenumber, data);
+                return ToxFunctions.FileSendData(tox, friend.Number, filenumber, data);
             }
         }
 
         /// <summary>
         /// Retrieves the recommended/maximum size of the filedata to send with FileSendData.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <returns></returns>
-        public int FileDataSize(int friendnumber)
+        public int FileDataSize(ToxFriend friend)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.FileDataSize(tox, friendnumber);
+                return ToxFunctions.FileDataSize(tox, friend.Number);
             }
         }
 
         /// <summary>
         /// Retrieves the number of bytes left to be sent/received.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="filenumber"></param>
         /// <param name="send_receive">0 if we're sending and 1 if we're receiving.</param>
         /// <returns></returns>
-        public ulong FileDataRemaining(int friendnumber, int filenumber, int send_receive)
+        public ulong FileDataRemaining(ToxFriend friend, int filenumber, int send_receive)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.FileDataRemaining(tox, friendnumber, filenumber, send_receive);
+                return ToxFunctions.FileDataRemaining(tox, friend.Number, filenumber, send_receive);
             }
         }
 
@@ -313,7 +314,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="groupnumber"></param>
         /// <returns></returns>
-        public string[] GetGroupNames(int groupnumber)
+        private string[] GetGroupNames(int groupnumber)
         {
             lock (obj)
             {
@@ -449,7 +450,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="friendnumber"></param>
         /// <returns></returns>
-        public bool FriendExists(int friendnumber)
+        private bool FriendExists(int friendnumber)
         {
             lock (obj)
             {
@@ -464,7 +465,7 @@ namespace SharpTox.Core
         /// Retrieves the number of friends in this tox instance.
         /// </summary>
         /// <returns></returns>
-        public int GetFriendlistCount()
+        private int GetFriendlistCount()
         {
             lock (obj)
             {
@@ -479,7 +480,7 @@ namespace SharpTox.Core
         /// Retrieves an array of friendnumbers of this tox instance.
         /// </summary>
         /// <returns></returns>
-        public int[] GetFriendlist()
+        private int[] GetFriendlist()
         {
             lock (obj)
             {
@@ -495,7 +496,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="friendnumber"></param>
         /// <returns></returns>
-        public string GetName(int friendnumber)
+        private string GetName(int friendnumber)
         {
             lock (obj)
             {
@@ -524,16 +525,16 @@ namespace SharpTox.Core
         /// <summary>
         /// Retrieves a DateTime object of the last time friendnumber was seen online.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <returns></returns>
-        public DateTime GetLastOnline(int friendnumber)
+        public DateTime GetLastOnline(ToxFriend friend)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxTools.EpochToDateTime((long)ToxFunctions.GetLastOnline(tox, friendnumber));
+                return ToxTools.EpochToDateTime((long)ToxFunctions.GetLastOnline(tox, friend.Number));
             }
         }
 
@@ -744,7 +745,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Sets the typing status of this tox instance.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="is_typing"></param>
         /// <returns></returns>
         public bool SetUserIsTyping(ToxFriend friend, bool is_typing)
@@ -761,7 +762,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Send a message to a friend.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="message"></param>
         /// <returns></returns>
         public int SendMessage(ToxFriend friend, string message)
@@ -778,7 +779,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Send a message to a friend. The given id will be used as the message id.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="id"></param>
         /// <param name="message"></param>
         /// <returns></returns>
@@ -796,7 +797,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Sends an action to a friend.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="action"></param>
         /// <returns></returns>
         public int SendAction(ToxFriend friend, string action)
@@ -813,7 +814,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Send an action to a friend. The given id will be used as the message id.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="id"></param>
         /// <param name="message"></param>
         /// <returns></returns>
@@ -875,7 +876,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Deletes a friend.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <returns></returns>
         public bool DeleteFriend(ToxFriend friend)
         {
@@ -884,24 +885,40 @@ namespace SharpTox.Core
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.DeleteFriend(tox, friend.Number);
+                bool success = ToxFunctions.DeleteFriend(tox, friend.Number);
+
+                if (success)
+                    Friends.Remove(friend);
+
+                return success;
             }
         }
 
         /// <summary>
         /// Joins a group with the given public key of the group.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="group_public_key"></param>
         /// <returns></returns>
-        public int JoinGroup(ToxFriend friend, string group_public_key)
+        public ToxGroup JoinGroup(ToxFriend friend, string group_public_key)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.JoinGroupchat(tox, friend.Number, group_public_key);
+                int result = ToxFunctions.JoinGroupchat(tox, friend.Number, group_public_key);
+                if (result == -1)
+                {
+                    throw new Exception("Could not join group");
+                }
+                else
+                {
+                    ToxGroup group = new ToxGroup(result);
+                    Groups.Add(group);
+
+                    return group;
+                }
             }
         }
 
@@ -911,7 +928,7 @@ namespace SharpTox.Core
         /// <param name="groupnumber"></param>
         /// <param name="peernumber"></param>
         /// <returns></returns>
-        public string GetGroupMemberName(int groupnumber, int peernumber)
+        private string GetGroupMemberName(int groupnumber, int peernumber)
         {
             lock (obj)
             {
@@ -927,7 +944,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="groupnumber"></param>
         /// <returns></returns>
-        public int GetGroupMemberCount(int groupnumber)
+        private int GetGroupMemberCount(int groupnumber)
         {
             lock (obj)
             {
@@ -941,24 +958,29 @@ namespace SharpTox.Core
         /// <summary>
         /// Deletes a group chat.
         /// </summary>
-        /// <param name="groupnumber"></param>
+        /// <param name="group"></param>
         /// <returns></returns>
-        public bool DeleteGroupChat(int groupnumber)
+        public bool DeleteGroupChat(ToxGroup group)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.DeleteGroupchat(tox, groupnumber);
+                bool success = ToxFunctions.DeleteGroupchat(tox, group.Number);
+
+                if (success)
+                    Groups.Remove(group);
+
+                return success;
             }
         }
 
         /// <summary>
         /// Invites a friend to a group chat.
         /// </summary>
-        /// <param name="friendnumber"></param>
-        /// <param name="groupnumber"></param>
+        /// <param name="friend"></param>
+        /// <param name="group"></param>
         /// <returns></returns>
         public bool InviteFriend(ToxFriend friend, ToxGroup group)
         {
@@ -974,7 +996,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Sends a message to a group.
         /// </summary>
-        /// <param name="groupnumber"></param>
+        /// <param name="group"></param>
         /// <param name="message"></param>
         /// <returns></returns>
         public bool SendGroupMessage(ToxGroup group, string message)
@@ -991,7 +1013,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Sends an action to a group.
         /// </summary>
-        /// <param name="groupnumber"></param>
+        /// <param name="group"></param>
         /// <param name="action"></param>
         /// <returns></returns>
         public bool SendGroupAction(ToxGroup group, string action)
@@ -1073,7 +1095,7 @@ namespace SharpTox.Core
         /// <summary>
         /// Whether to send read receipts for the specified friendnumber or not.
         /// </summary>
-        /// <param name="friendnumber"></param>
+        /// <param name="friend"></param>
         /// <param name="send_receipts"></param>
         public void SetSendsReceipts(ToxFriend friend, bool send_receipts)
         {

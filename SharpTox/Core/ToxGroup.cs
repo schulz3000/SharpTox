@@ -1,14 +1,16 @@
 ﻿#pragma warning disable 1591
 
+using System.Collections.ObjectModel;
+
 namespace SharpTox.Core
 {
     public class ToxGroup
     {
         public int Number { get; private set; }
 
-        public ToxGroupMember[] Members { get; internal set; }
+        public ReadOnlyCollection<ToxGroupMember> Members { get; internal set; }
 
-        public ToxGroup(int groupnumber)
+        internal ToxGroup(int groupnumber)
         {
             Number = groupnumber;
         }

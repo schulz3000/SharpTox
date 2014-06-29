@@ -14,7 +14,7 @@ namespace SharpTox.Core
         public bool IsOnline { get; internal set; }
         public bool IsTyping { get; internal set; }
 
-        public ToxFriend(int friendnumber)
+        internal ToxFriend(int friendnumber)
         {
             Number = friendnumber;
         }
