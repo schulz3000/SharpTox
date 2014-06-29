@@ -1,4 +1,6 @@
-﻿namespace SharpTox.Core
+﻿#pragma warning disable 1591
+
+namespace SharpTox.Core
 {
     public class ToxGroupMember
     {
@@ -7,3 +9,5 @@
         public ToxGroupMember() { }
     }
 }
+
+#pragma warning disable 1591

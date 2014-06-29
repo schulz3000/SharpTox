@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -9,23 +10,23 @@ namespace SharpTox.Core
 {
     #region Event Delegates
     public delegate void OnFriendRequestDelegate(string id, string message);
-    public delegate void OnConnectionStatusDelegate(int friendnumber, int status);
-    public delegate void OnFriendMessageDelegate(int friendnumber, string message);
-    public delegate void OnFriendActionDelegate(int friendnumber, string action);
-    public delegate void OnNameChangeDelegate(int friendnumber, string newname);
-    public delegate void OnStatusMessageDelegate(int friendnumber, string newstatus);
-    public delegate void OnUserStatusDelegate(int friendnumber, ToxUserStatus status);
-    public delegate void OnTypingChangeDelegate(int friendnumber, bool is_typing);
+    public delegate void OnConnectionStatusDelegate(ToxFriend friend, int status);
+    public delegate void OnFriendMessageDelegate(ToxFriend friend, string message);
+    public delegate void OnFriendActionDelegate(ToxFriend friend, string action);
+    public delegate void OnNameChangeDelegate(ToxFriend friend, string newname);
+    public delegate void OnStatusMessageDelegate(ToxFriend friend, string newstatus);
+    public delegate void OnUserStatusDelegate(ToxFriend friend, ToxUserStatus status);
+    public delegate void OnTypingChangeDelegate(ToxFriend friend, bool is_typing);
 
-    public delegate void OnGroupInviteDelegate(int friendnumber, string group_public_key);
-    public delegate void OnGroupMessageDelegate(int groupnumber, int friendgroupnumber, string message);
-    public delegate void OnGroupActionDelegate(int groupnumber, int friendgroupnumber, string action);
-    public delegate void OnGroupNamelistChangeDelegate(int groupnumber, int peernumber, ToxChatChange change);
+    public delegate void OnGroupInviteDelegate(ToxFriend friend, string group_public_key);
+    public delegate void OnGroupMessageDelegate(ToxGroup group, int friendgroupnumber, string message);
+    public delegate void OnGroupActionDelegate(ToxGroup group, int friendgroupnumber, string action);
+    public delegate void OnGroupNamelistChangeDelegate(ToxGroup group, int peernumber, ToxChatChange change);
 
-    public delegate void OnFileControlDelegate(int friendnumber, int receive_send, int filenumber, int control_type, byte[] data);
-    public delegate void OnFileDataDelegate(int friendnumber, int filenumber, byte[] data);
-    public delegate void OnFileSendRequestDelegate(int friendnumber, int filenumber, ulong filesize, string filename);
-    public delegate void OnReadReceiptDelegate(int friendnumber, uint receipt);
+    public delegate void OnFileControlDelegate(ToxFriend friend, int receive_send, int filenumber, int control_type, byte[] data);
+    public delegate void OnFileDataDelegate(ToxFriend friend, int filenumber, byte[] data);
+    public delegate void OnFileSendRequestDelegate(ToxFriend friend, int filenumber, ulong filesize, string filename);
+    public delegate void OnReadReceiptDelegate(ToxFriend friend, uint receipt);
     #endregion
 
     public class Tox
@@ -116,6 +117,9 @@ namespace SharpTox.Core
         /// The invoke delegate to use when raising events.
         /// </summary>
         public InvokeDelegate Invoker;
+
+        public List<ToxFriend> Friends { get; private set; }
+        public List<ToxGroup> Groups { get; private set; }
 
         #region Callback Delegates
         private ToxDelegates.CallbackFriendRequestDelegate friendrequestdelegate;
@@ -345,7 +349,7 @@ namespace SharpTox.Core
         /// <param name="id"></param>
         /// <param name="message"></param>
         /// <returns>friendnumber</returns>
-        public int AddFriend(string id, string message)
+        public ToxFriend AddFriend(string id, string message)
         {
             lock (obj)
             {
@@ -355,9 +359,16 @@ namespace SharpTox.Core
                 int result = ToxFunctions.AddFriend(tox, id, message);
 
                 if (result < 0)
+                {
                     throw new Exception("Could not add friend: " + (ToxAFError)result);
+                }
                 else
-                    return result;
+                {
+                    ToxFriend friend = new ToxFriend(result);
+                    Friends.Add(friend);
+
+                    return friend;
+                }
             }
         }
 
@@ -366,7 +377,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="id"></param>
         /// <returns>friendnumber</returns>
-        public int AddFriend(string id)
+        public ToxFriend AddFriend(string id)
         {
             lock (obj)
             {
@@ -376,9 +387,16 @@ namespace SharpTox.Core
                 int result = ToxFunctions.AddFriend(tox, id, "No message.");
 
                 if (result < 0)
+                {
                     throw new Exception("Could not add friend: " + (ToxAFError)result);
+                }
                 else
-                    return result;
+                {
+                    ToxFriend friend = new ToxFriend(result);
+                    Friends.Add(friend);
+
+                    return friend;
+                }
             }
         }
 
@@ -387,7 +405,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="id"></param>
         /// <returns>friendnumber</returns>
-        public int AddFriendNoRequest(string id)
+        public ToxFriend AddFriendNoRequest(string id)
         {
             lock (obj)
             {
@@ -397,9 +415,16 @@ namespace SharpTox.Core
                 int result = ToxFunctions.AddFriendNoRequest(tox, id);
 
                 if (result < 0)
+                {
                     throw new Exception("Could not add friend: " + (ToxAFError)result);
+                }
                 else
-                    return result;
+                {
+                    ToxFriend friend = new ToxFriend(result);
+                    Friends.Add(friend);
+
+                    return friend;
+                }
             }
         }
 
@@ -532,7 +557,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="friendnumber"></param>
         /// <returns></returns>
-        public bool GetIsTyping(int friendnumber)
+        private bool GetIsTyping(int friendnumber)
         {
             lock (obj)
             {
@@ -564,7 +589,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="friendnumber"></param>
         /// <returns></returns>
-        public string GetStatusMessage(int friendnumber)
+        private string GetStatusMessage(int friendnumber)
         {
             lock (obj)
             {
@@ -610,7 +635,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="friendnumber"></param>
         /// <returns></returns>
-        public int GetFriendConnectionStatus(int friendnumber)
+        private int GetFriendConnectionStatus(int friendnumber)
         {
             lock (obj)
             {
@@ -642,7 +667,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="friendnumber"></param>
         /// <returns></returns>
-        public ToxUserStatus GetUserStatus(int friendnumber)
+        private ToxUserStatus GetUserStatus(int friendnumber)
         {
             lock (obj)
             {
@@ -722,14 +747,14 @@ namespace SharpTox.Core
         /// <param name="friendnumber"></param>
         /// <param name="is_typing"></param>
         /// <returns></returns>
-        public bool SetUserIsTyping(int friendnumber, bool is_typing)
+        public bool SetUserIsTyping(ToxFriend friend, bool is_typing)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.SetUserIsTyping(tox, friendnumber, is_typing);
+                return ToxFunctions.SetUserIsTyping(tox, friend.Number, is_typing);
             }
         }
 
@@ -739,14 +764,14 @@ namespace SharpTox.Core
         /// <param name="friendnumber"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public int SendMessage(int friendnumber, string message)
+        public int SendMessage(ToxFriend friend, string message)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.SendMessage(tox, friendnumber, message);
+                return ToxFunctions.SendMessage(tox, friend.Number, message);
             }
         }
 
@@ -757,14 +782,14 @@ namespace SharpTox.Core
         /// <param name="id"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public int SendMessageWithID(int friendnumber, int id, string message)
+        public int SendMessageWithID(ToxFriend friend, int id, string message)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.SendMessageWithID(tox, friendnumber, id, message);
+                return ToxFunctions.SendMessageWithID(tox, friend.Number, id, message);
             }
         }
 
@@ -774,14 +799,14 @@ namespace SharpTox.Core
         /// <param name="friendnumber"></param>
         /// <param name="action"></param>
         /// <returns></returns>
-        public int SendAction(int friendnumber, string action)
+        public int SendAction(ToxFriend friend, string action)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.SendAction(tox, friendnumber, action);
+                return ToxFunctions.SendAction(tox, friend.Number, action);
             }
         }
 
@@ -792,14 +817,14 @@ namespace SharpTox.Core
         /// <param name="id"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public int SendActionWithID(int friendnumber, int id, string message)
+        public int SendActionWithID(ToxFriend friend, int id, string message)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.SendActionWithID(tox, friendnumber, id, message);
+                return ToxFunctions.SendActionWithID(tox, friend.Number, id, message);
             }
         }
 
@@ -852,14 +877,14 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="friendnumber"></param>
         /// <returns></returns>
-        public bool DeleteFriend(int friendnumber)
+        public bool DeleteFriend(ToxFriend friend)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.DeleteFriend(tox, friendnumber);
+                return ToxFunctions.DeleteFriend(tox, friend.Number);
             }
         }
 
@@ -869,14 +894,14 @@ namespace SharpTox.Core
         /// <param name="friendnumber"></param>
         /// <param name="group_public_key"></param>
         /// <returns></returns>
-        public int JoinGroup(int friendnumber, string group_public_key)
+        public int JoinGroup(ToxFriend friend, string group_public_key)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.JoinGroupchat(tox, friendnumber, group_public_key);
+                return ToxFunctions.JoinGroupchat(tox, friend.Number, group_public_key);
             }
         }
 
@@ -935,14 +960,14 @@ namespace SharpTox.Core
         /// <param name="friendnumber"></param>
         /// <param name="groupnumber"></param>
         /// <returns></returns>
-        public bool InviteFriend(int friendnumber, int groupnumber)
+        public bool InviteFriend(ToxFriend friend, ToxGroup group)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.InviteFriend(tox, friendnumber, groupnumber);
+                return ToxFunctions.InviteFriend(tox, friend.Number, group.Number);
             }
         }
 
@@ -952,14 +977,14 @@ namespace SharpTox.Core
         /// <param name="groupnumber"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public bool SendGroupMessage(int groupnumber, string message)
+        public bool SendGroupMessage(ToxGroup group, string message)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.GroupMessageSend(tox, groupnumber, message);
+                return ToxFunctions.GroupMessageSend(tox, group.Number, message);
             }
         }
 
@@ -969,14 +994,14 @@ namespace SharpTox.Core
         /// <param name="groupnumber"></param>
         /// <param name="action"></param>
         /// <returns></returns>
-        public bool SendGroupAction(int groupnumber, string action)
+        public bool SendGroupAction(ToxGroup group, string action)
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.GroupActionSend(tox, groupnumber, action);
+                return ToxFunctions.GroupActionSend(tox, group.Number, action);
             }
         }
 
@@ -984,14 +1009,25 @@ namespace SharpTox.Core
         /// Creates a new group and retrieves the group number.
         /// </summary>
         /// <returns></returns>
-        public int NewGroup()
+        public ToxGroup NewGroup()
         {
             lock (obj)
             {
                 if (tox == IntPtr.Zero)
                     throw null;
 
-                return ToxFunctions.AddGroupchat(tox);
+                int result = ToxFunctions.AddGroupchat(tox);
+                if (result == -1)
+                {
+                    throw new Exception("Could not create group");
+                }
+                else
+                {
+                    ToxGroup group = new ToxGroup(result);
+                    Groups.Add(group);
+
+                    return group;
+                }
             }
         }
 
@@ -1039,9 +1075,19 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="friendnumber"></param>
         /// <param name="send_receipts"></param>
-        public void SetSendsReceipts(int friendnumber, bool send_receipts)
+        public void SetSendsReceipts(ToxFriend friend, bool send_receipts)
         {
-            ToxFunctions.SetSendsReceipts(tox, friendnumber, send_receipts);
+            ToxFunctions.SetSendsReceipts(tox, friend.Number, send_receipts);
+        }
+
+        /// <summary>
+        /// Retrieve a friend by friendnumber.
+        /// </summary>
+        /// <param name="friendnumber"></param>
+        /// <returns></returns>
+        public ToxFriend GetFriendByNumber(int friendnumber)
+        {
+            return Friends.Find(f => f.Number == friendnumber);
         }
 
         private void callbacks()
@@ -1055,7 +1101,12 @@ namespace SharpTox.Core
             ToxFunctions.CallbackConnectionStatus(tox, connectionstatusdelegate = new ToxDelegates.CallbackConnectionStatusDelegate((IntPtr t, int friendnumber, byte status, IntPtr userdata) =>
             {
                 if (OnConnectionStatusChanged != null)
-                    Invoker(OnConnectionStatusChanged, friendnumber, (int)status);
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    friend.IsOnline = status == 0 ? false : true;
+
+                    Invoker(OnConnectionStatusChanged, friend, (int)status);
+                }
             }));
 
             ToxFunctions.CallbackFriendMessage(tox, friendmessagedelegate = new ToxDelegates.CallbackFriendMessageDelegate((IntPtr t, int friendnumber, byte[] message, ushort length, IntPtr userdata) =>
@@ -1073,19 +1124,36 @@ namespace SharpTox.Core
             ToxFunctions.CallbackNameChange(tox, namechangedelegate = new ToxDelegates.CallbackNameChangeDelegate((IntPtr t, int friendnumber, byte[] newname, ushort length, IntPtr userdata) =>
             {
                 if (OnNameChange != null)
-                    Invoker(OnNameChange, friendnumber, ToxTools.RemoveNull(Encoding.UTF8.GetString(newname, 0, length)));
+                {
+                    string name = ToxTools.RemoveNull(Encoding.UTF8.GetString(newname, 0, length));
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    friend.Name = name;
+
+                    Invoker(OnNameChange, friendnumber, name);
+                }
             }));
 
             ToxFunctions.CallbackStatusMessage(tox, statusmessagedelegate = new ToxDelegates.CallbackStatusMessageDelegate((IntPtr t, int friendnumber, byte[] newstatus, ushort length, IntPtr userdata) =>
             {
                 if (OnStatusMessage != null)
-                    Invoker(OnStatusMessage, friendnumber, ToxTools.RemoveNull(Encoding.UTF8.GetString(newstatus, 0, length)));
+                {
+                    string status = ToxTools.RemoveNull(Encoding.UTF8.GetString(newstatus, 0, length));
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    friend.StatusMessage = status;
+
+                    Invoker(OnStatusMessage, friendnumber, status);
+                }
             }));
 
             ToxFunctions.CallbackUserStatus(tox, userstatusdelegate = new ToxDelegates.CallbackUserStatusDelegate((IntPtr t, int friendnumber, ToxUserStatus status, IntPtr userdata) =>
             {
                 if (OnUserStatus != null)
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    friend.Status = status;
+
                     Invoker(OnUserStatus, friendnumber, status);
+                }
             }));
 
             ToxFunctions.CallbackTypingChange(tox, typingchangedelegate = new ToxDelegates.CallbackTypingChangeDelegate((IntPtr t, int friendnumber, byte typing, IntPtr userdata) =>
@@ -1093,7 +1161,12 @@ namespace SharpTox.Core
                 bool is_typing = typing == 0 ? false : true;
 
                 if (OnTypingChange != null)
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    friend.IsTyping = is_typing;
+
                     Invoker(OnTypingChange, friendnumber, is_typing);
+                }
             }));
 
             ToxFunctions.CallbackGroupAction(tox, groupactiondelegate = new ToxDelegates.CallbackGroupActionDelegate((IntPtr t, int groupnumber, int friendgroupnumber, byte[] action, ushort length, IntPtr userdata) =>
