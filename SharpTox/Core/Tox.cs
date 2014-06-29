@@ -136,6 +136,49 @@ namespace SharpTox.Core
             }
         }
 
+        private string username;
+        public string Username
+        {
+            get
+            {
+                return username;
+            }
+
+            set
+            {
+                if (SetName(value))
+                    username = value;
+            }
+        }
+
+        private ToxUserStatus userStatus;
+        public ToxUserStatus UserStatus
+        {
+            get
+            {
+                return userStatus;
+            }
+            set
+            {
+                if (SetUserStatus(value))
+                    userStatus = value;
+            }
+        }
+
+        private string userStatusMessage;
+        public string UserStatusMessage
+        {
+            get
+            {
+                return userStatusMessage;
+            }
+            set
+            {
+                if (SetStatusMessage(value))
+                    userStatusMessage = value;
+            }
+        }
+
         #region Callback Delegates
         private ToxDelegates.CallbackFriendRequestDelegate friendrequestdelegate;
         private ToxDelegates.CallbackConnectionStatusDelegate connectionstatusdelegate;
@@ -187,6 +230,8 @@ namespace SharpTox.Core
 
         private void populateFriendList()
         {
+            friends.Clear();
+
             foreach(int friendnumber in GetFriendlist())
             {
                 ToxFriend friend = new ToxFriend(friendnumber);
@@ -335,6 +380,10 @@ namespace SharpTox.Core
                     }
                     else
                     {
+                        username = GetSelfName();
+                        userStatus = GetSelfUserStatus();
+                        userStatusMessage = GetSelfStatusMessage();
+
                         populateFriendList();
                         return true;
                     }
@@ -545,7 +594,7 @@ namespace SharpTox.Core
         /// Retrieves the nickname of this tox instance.
         /// </summary>
         /// <returns></returns>
-        public string GetSelfName()
+        private string GetSelfName()
         {
             lock (obj)
             {
@@ -639,7 +688,7 @@ namespace SharpTox.Core
         /// Retrieves the status message of this tox instance.
         /// </summary>
         /// <returns></returns>
-        public string GetSelfStatusMessage()
+        private string GetSelfStatusMessage()
         {
             lock (obj)
             {
@@ -717,7 +766,7 @@ namespace SharpTox.Core
         /// Retrieves the current user status of this tox instance.
         /// </summary>
         /// <returns></returns>
-        public ToxUserStatus GetSelfUserStatus()
+        private ToxUserStatus GetSelfUserStatus()
         {
             lock (obj)
             {
@@ -733,7 +782,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public bool SetName(string name)
+        private bool SetName(string name)
         {
             lock (obj)
             {
@@ -749,7 +798,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="status"></param>
         /// <returns></returns>
-        public bool SetUserStatus(ToxUserStatus status)
+        private bool SetUserStatus(ToxUserStatus status)
         {
             lock (obj)
             {
@@ -765,7 +814,7 @@ namespace SharpTox.Core
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        public bool SetStatusMessage(string message)
+        private bool SetStatusMessage(string message)
         {
             lock (obj)
             {
