@@ -117,10 +117,24 @@ namespace SharpTox.Core
         /// <summary>
         /// The invoke delegate to use when raising events.
         /// </summary>
-        public InvokeDelegate Invoker;
+        public InvokeDelegate Invoker { get; private set; }
 
-        public List<ToxFriend> Friends { get; private set; }
-        public List<ToxGroup> Groups { get; private set; }
+        private List<ToxFriend> friends;
+        private List<ToxGroup> groups;
+        public ReadOnlyCollection<ToxFriend> Friends 
+        { 
+            get 
+            { 
+                return friends.AsReadOnly();
+            }
+        }
+        public ReadOnlyCollection<ToxGroup> Groups
+        {
+            get
+            {
+                return groups.AsReadOnly();
+            }
+        }
 
         #region Callback Delegates
         private ToxDelegates.CallbackFriendRequestDelegate friendrequestdelegate;
@@ -163,6 +177,8 @@ namespace SharpTox.Core
             tox = ToxFunctions.New(ipv6enabled);
             Ipv6Enabled = ipv6enabled;
 
+            friends = new List<ToxFriend>();
+            groups = new List<ToxGroup>();
             obj = new object();
             Invoker = new InvokeDelegate(dummyinvoker);
 
@@ -366,7 +382,7 @@ namespace SharpTox.Core
                 else
                 {
                     ToxFriend friend = new ToxFriend(result);
-                    Friends.Add(friend);
+                    friends.Add(friend);
 
                     return friend;
                 }
@@ -394,7 +410,7 @@ namespace SharpTox.Core
                 else
                 {
                     ToxFriend friend = new ToxFriend(result);
-                    Friends.Add(friend);
+                    friends.Add(friend);
 
                     return friend;
                 }
@@ -422,7 +438,7 @@ namespace SharpTox.Core
                 else
                 {
                     ToxFriend friend = new ToxFriend(result);
-                    Friends.Add(friend);
+                    friends.Add(friend);
 
                     return friend;
                 }
@@ -888,7 +904,8 @@ namespace SharpTox.Core
                 bool success = ToxFunctions.DeleteFriend(tox, friend.Number);
 
                 if (success)
-                    Friends.Remove(friend);
+                    if (friends.Contains(friend))
+                        friends.Remove(friend);
 
                 return success;
             }
@@ -915,7 +932,7 @@ namespace SharpTox.Core
                 else
                 {
                     ToxGroup group = new ToxGroup(result);
-                    Groups.Add(group);
+                    groups.Add(group);
 
                     return group;
                 }
@@ -970,7 +987,8 @@ namespace SharpTox.Core
                 bool success = ToxFunctions.DeleteGroupchat(tox, group.Number);
 
                 if (success)
-                    Groups.Remove(group);
+                    if (groups.Contains(group))
+                        groups.Remove(group);
 
                 return success;
             }
@@ -1046,7 +1064,7 @@ namespace SharpTox.Core
                 else
                 {
                     ToxGroup group = new ToxGroup(result);
-                    Groups.Add(group);
+                    groups.Add(group);
 
                     return group;
                 }
@@ -1109,7 +1127,17 @@ namespace SharpTox.Core
         /// <returns></returns>
         public ToxFriend GetFriendByNumber(int friendnumber)
         {
-            return Friends.Find(f => f.Number == friendnumber);
+            return friends.Find(f => f.Number == friendnumber);
+        }
+
+        /// <summary>
+        /// Retrieve a group by groupnumber.
+        /// </summary>
+        /// <param name="groupnumber"></param>
+        /// <returns></returns>
+        public ToxGroup GetGroupByNumber(int groupnumber)
+        {
+            return groups.Find(g => g.Number == groupnumber);
         }
 
         private void callbacks()
@@ -1134,13 +1162,19 @@ namespace SharpTox.Core
             ToxFunctions.CallbackFriendMessage(tox, friendmessagedelegate = new ToxDelegates.CallbackFriendMessageDelegate((IntPtr t, int friendnumber, byte[] message, ushort length, IntPtr userdata) =>
             {
                 if (OnFriendMessage != null)
-                    Invoker(OnFriendMessage, friendnumber, ToxTools.RemoveNull(Encoding.UTF8.GetString(message, 0, length)));
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    Invoker(OnFriendMessage, friend, ToxTools.RemoveNull(Encoding.UTF8.GetString(message, 0, length)));
+                }
             }));
 
             ToxFunctions.CallbackFriendAction(tox, friendactiondelegate = new ToxDelegates.CallbackFriendActionDelegate((IntPtr t, int friendnumber, byte[] action, ushort length, IntPtr userdata) =>
             {
                 if (OnFriendAction != null)
-                    Invoker(OnFriendAction, friendnumber, ToxTools.RemoveNull(Encoding.UTF8.GetString(action, 0, length)));
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    Invoker(OnFriendAction, friend, ToxTools.RemoveNull(Encoding.UTF8.GetString(action, 0, length)));
+                }
             }));
 
             ToxFunctions.CallbackNameChange(tox, namechangedelegate = new ToxDelegates.CallbackNameChangeDelegate((IntPtr t, int friendnumber, byte[] newname, ushort length, IntPtr userdata) =>
@@ -1151,7 +1185,7 @@ namespace SharpTox.Core
                     ToxFriend friend = GetFriendByNumber(friendnumber);
                     friend.Name = name;
 
-                    Invoker(OnNameChange, friendnumber, name);
+                    Invoker(OnNameChange, friend, name);
                 }
             }));
 
@@ -1163,7 +1197,7 @@ namespace SharpTox.Core
                     ToxFriend friend = GetFriendByNumber(friendnumber);
                     friend.StatusMessage = status;
 
-                    Invoker(OnStatusMessage, friendnumber, status);
+                    Invoker(OnStatusMessage, friend, status);
                 }
             }));
 
@@ -1174,7 +1208,7 @@ namespace SharpTox.Core
                     ToxFriend friend = GetFriendByNumber(friendnumber);
                     friend.Status = status;
 
-                    Invoker(OnUserStatus, friendnumber, status);
+                    Invoker(OnUserStatus, friend, status);
                 }
             }));
 
@@ -1187,56 +1221,108 @@ namespace SharpTox.Core
                     ToxFriend friend = GetFriendByNumber(friendnumber);
                     friend.IsTyping = is_typing;
 
-                    Invoker(OnTypingChange, friendnumber, is_typing);
+                    Invoker(OnTypingChange, friend, is_typing);
                 }
             }));
 
             ToxFunctions.CallbackGroupAction(tox, groupactiondelegate = new ToxDelegates.CallbackGroupActionDelegate((IntPtr t, int groupnumber, int friendgroupnumber, byte[] action, ushort length, IntPtr userdata) =>
             {
                 if (OnGroupAction != null)
-                    Invoker(OnGroupAction, groupnumber, friendgroupnumber, ToxTools.RemoveNull(Encoding.UTF8.GetString(action, 0, length)));
+                {
+                    ToxGroup group = GetGroupByNumber(groupnumber);
+                    Invoker(OnGroupAction, group, friendgroupnumber, ToxTools.RemoveNull(Encoding.UTF8.GetString(action, 0, length)));
+                }
             }));
 
             ToxFunctions.CallbackGroupMessage(tox, groupmessagedelegate = new ToxDelegates.CallbackGroupMessageDelegate((IntPtr t, int groupnumber, int friendgroupnumber, byte[] message, ushort length, IntPtr userdata) =>
             {
                 if (OnGroupMessage != null)
-                    Invoker(OnGroupMessage, groupnumber, friendgroupnumber, ToxTools.RemoveNull(Encoding.UTF8.GetString(message, 0, length)));
+                {
+                    ToxGroup group = GetGroupByNumber(groupnumber);
+                    Invoker(OnGroupMessage, group, friendgroupnumber, ToxTools.RemoveNull(Encoding.UTF8.GetString(message, 0, length)));
+                }
             }));
 
             ToxFunctions.CallbackGroupInvite(tox, groupinvitedelegate = new ToxDelegates.CallbackGroupInviteDelegate((IntPtr t, int friendnumber, byte[] group_public_key, IntPtr userdata) =>
             {
                 if (OnGroupInvite != null)
-                    Invoker(OnGroupInvite, friendnumber, ToxTools.HexBinToString(group_public_key));
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    Invoker(OnGroupInvite, friend, ToxTools.HexBinToString(group_public_key));
+                }
             }));
 
             ToxFunctions.CallbackGroupNamelistChange(tox, groupnamelistchangedelegate = new ToxDelegates.CallbackGroupNamelistChangeDelegate((IntPtr t, int groupnumber, int peernumber, ToxChatChange change, IntPtr userdata) =>
             {
                 if (OnGroupNamelistChange != null)
-                    Invoker(OnGroupNamelistChange, groupnumber, peernumber, change);
+                {
+                    ToxGroup group = GetGroupByNumber(groupnumber);
+
+                    switch(change)
+                    {
+                        case ToxChatChange.PEER_ADD:
+                            {
+                                ToxGroupMember member = new ToxGroupMember(peernumber);
+                                group.AddMember(member);
+
+                                break;
+                            }
+
+                        case ToxChatChange.PEER_DEL:
+                            {
+                                ToxGroupMember member = group.GetGroupMemberByNumber(peernumber);
+                                group.RemoveMember(member);
+
+                                break;
+                            }
+
+                        case ToxChatChange.PEER_NAME:
+                            {
+                                ToxGroupMember member = group.GetGroupMemberByNumber(peernumber);
+                                member.Name = GetGroupMemberName(groupnumber, peernumber);
+
+                                break;
+                            }
+                    }
+
+                    Invoker(OnGroupNamelistChange, group, peernumber, change);
+                }
             }));
 
             ToxFunctions.CallbackFileControl(tox, filecontroldelegate = new ToxDelegates.CallbackFileControlDelegate((IntPtr t, int friendnumber, byte receive_send, byte filenumber, byte control_type, byte[] data, ushort length, IntPtr userdata) =>
             {
                 if (OnFileControl != null)
-                    Invoker(OnFileControl, friendnumber, receive_send, filenumber, control_type, data);
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    Invoker(OnFileControl, friend, receive_send, filenumber, control_type, data);
+                }
             }));
 
             ToxFunctions.CallbackFileData(tox, filedatadelegate = new ToxDelegates.CallbackFileDataDelegate((IntPtr t, int friendnumber, byte filenumber, byte[] data, ushort length, IntPtr userdata) =>
             {
                 if (OnFileData != null)
-                    Invoker(OnFileData, friendnumber, filenumber, data);
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    Invoker(OnFileData, friend, filenumber, data);
+                }
             }));
 
             ToxFunctions.CallbackFileSendRequest(tox, filesendrequestdelegate = new ToxDelegates.CallbackFileSendRequestDelegate((IntPtr t, int friendnumber, byte filenumber, ulong filesize, byte[] filename, ushort filename_length, IntPtr userdata) =>
             {
                 if (OnFileSendRequest != null)
-                    Invoker(OnFileSendRequest, friendnumber, filenumber, filesize, ToxTools.RemoveNull(Encoding.UTF8.GetString(filename, 0, filename_length)));
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    Invoker(OnFileSendRequest, friend, filenumber, filesize, ToxTools.RemoveNull(Encoding.UTF8.GetString(filename, 0, filename_length)));
+                }
             }));
 
             ToxFunctions.CallbackReadReceipt(tox, readreceiptdelegate = new ToxDelegates.CallbackReadReceiptDelegate((IntPtr t, int friendnumber, uint receipt, IntPtr userdata) =>
             {
                 if (OnReadReceipt != null)
-                    Invoker(OnReadReceipt, friendnumber, receipt);
+                {
+                    ToxFriend friend = GetFriendByNumber(friendnumber);
+                    Invoker(OnReadReceipt, friend, receipt);
+                }
             }));
         }
     }
