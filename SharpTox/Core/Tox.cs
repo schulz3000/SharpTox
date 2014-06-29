@@ -185,6 +185,19 @@ namespace SharpTox.Core
             callbacks();
         }
 
+        private void populateFriendList()
+        {
+            foreach(int friendnumber in GetFriendlist())
+            {
+                ToxFriend friend = new ToxFriend(friendnumber);
+                friend.Name = GetName(friendnumber);
+                friend.Status = GetUserStatus(friendnumber);
+                friend.StatusMessage = GetStatusMessage(friendnumber);
+
+                friends.Add(friend);
+            }
+        }
+
         private object dummyinvoker(Delegate method, params object[] p)
         {
             return method.DynamicInvoke(p);
@@ -317,9 +330,14 @@ namespace SharpTox.Core
                     stream.Close();
 
                     if (!ToxFunctions.Load(tox, bytes, (uint)bytes.Length))
+                    {
                         return false;
+                    }
                     else
+                    {
+                        populateFriendList();
                         return true;
+                    }
                 }
                 catch { return false; }
             }

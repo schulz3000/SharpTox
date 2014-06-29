@@ -1,6 +1,7 @@
 ﻿#pragma warning disable 1591
 
 using System;
+using SharpTox.Core;
 
 namespace SharpTox.Av
 {
@@ -100,17 +101,17 @@ namespace SharpTox.Av
         /// Cancels a call.
         /// </summary>
         /// <param name="call_index"></param>
-        /// <param name="friend_number"></param>
+        /// <param name="friend"></param>
         /// <param name="reason"></param>
         /// <returns></returns>
-        public ToxAvError Cancel(int call_index, int friend_number, string reason)
+        public ToxAvError Cancel(int call_index, ToxFriend friend, string reason)
         {
             lock (obj)
             {
                 if (toxav == IntPtr.Zero)
                     throw null;
 
-                return ToxAvFunctions.Cancel(toxav, call_index, friend_number, reason);
+                return ToxAvFunctions.Cancel(toxav, call_index, friend.Number, reason);
             }
         }
 
@@ -135,18 +136,18 @@ namespace SharpTox.Av
         /// Creates a new call.
         /// </summary>
         /// <param name="call_index"></param>
-        /// <param name="friend_number"></param>
+        /// <param name="friend"></param>
         /// <param name="call_type"></param>
         /// <param name="ringing_seconds"></param>
         /// <returns></returns>
-        public ToxAvError Call(int friend_number, ToxAvCallType call_type, int ringing_seconds, out int call_index)
+        public ToxAvError Call(ToxFriend friend, ToxAvCallType call_type, int ringing_seconds, out int call_index)
         {
             lock (obj)
             {
                 if (toxav == IntPtr.Zero)
                     throw null;
 
-                return ToxAvFunctions.Call(toxav, friend_number, call_type, ringing_seconds, out call_index);
+                return ToxAvFunctions.Call(toxav, friend.Number, call_type, ringing_seconds, out call_index);
             }
         }
 
